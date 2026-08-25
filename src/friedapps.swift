@@ -33,70 +33,51 @@ public class Friedapps{
         ]
 
     }
-
-    public func get_domains_list() async throws -> Any {
-        let urlString = "\(api)/temp-mail/domains"
-        guard let url = URL(string: urlString) else {
+    
+    private func fetchJSON(from urlString: String,method: HTTPMethod = .get,body: Data? = nil,queryParameters: [String: String]? = nil) async throws -> Any {
+        var urlComponents = URLComponents(string: urlString)
+        if let queryParameters = queryParameters {
+            urlComponents?.queryItems = queryParameters.map { URLQueryItem(name: $0.key, value: $0.value) }
+        }
+        guard let url = urlComponents?.url else {
             throw NSError(domain: "Invalid URL", code: -1)
         }
         var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        request.httpMethod = method.rawValue
         request.allHTTPHeaderFields = headers
+        if let body = body {
+            request.httpBody = body
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
         let (data, _) = try await URLSession.shared.data(for: request)
         return try JSONSerialization.jsonObject(with: data)
     }
 
-    public func generate_email() async throws -> Any {
-        guard let url = URL(string: "\(api)/temp-mail/addresses") else {
-            throw NSError(domain: "Invalid URL", code: -1)
-        }
-    
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.allHTTPHeaderFields = headers
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try? JSONSerialization.data(withJSONObject: [:], options: [])
-    
-        let (data, _) = try await URLSession.shared.data(for: request)
-        return try JSONSerialization.jsonObject(with: data)
+    public func getDomainsList() async throws -> Any {
+        return try await fetchJSON(from: "\(api)/temp-mail/domains")
     }
 
-    public func delete_email_address(email_id: String) async throws -> Any {
-        guard let url = URL(string: "\(api)/temp-mail/addresses/\(email_id)") else {
-            throw NSError(domain: "Invalid URL", code: -1)
-        }
-    
-        var request = URLRequest(url: url)
-        request.httpMethod = "DELETE"
-        request.allHTTPHeaderFields = headers
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try? JSONSerialization.data(withJSONObject: [:], options: [])
-    
-        let (data, _) = try await URLSession.shared.data(for: request)
-        return try JSONSerialization.jsonObject(with: data)
+    public func generateEmail() async throws -> Any {
+        let urlString = "\(api)/temp-mail/addresses"
+        
+        let bodyData = try? JSONSerialization.data(withJSONObject: [:], options: [])
+        
+        return try await fetchJSON(from: urlString,method: .post,body: bodyData,queryParameters: nil)
     }
 
-    public func get_emails_list(limit: Int = 50) async throws -> Any {
-        let urlString = "\(api)/temp-mail/emails?limit=\(limit)"
-        guard let url = URL(string: urlString) else {
-            throw NSError(domain: "Invalid URL", code: -1)
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.allHTTPHeaderFields = headers
-        let (data, _) = try await URLSession.shared.data(for: request)
-        return try JSONSerialization.jsonObject(with: data)
+    public func deleteEmailAddress(emailId: String) async throws -> Any {
+        let urlString = "\(api)/temp-mail/addresses/\(emailId)"
+        
+        let bodyData = try? JSONSerialization.data(withJSONObject: [:], options: [])
+        
+        return try await fetchJSON(from: urlString,method: .delete,body: bodyData,queryParameters: nil)
     }
 
-    public func get_message(email_id: String) async throws -> Any {
-        let urlString = "\(api)/temp-mail/emails/\(email_id)"
-        guard let url = URL(string: urlString) else {
-            throw NSError(domain: "Invalid URL", code: -1)
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.allHTTPHeaderFields = headers
-        let (data, _) = try await URLSession.shared.data(for: request)
-        return try JSONSerialization.jsonObject(with: data)
+    public func getEmailsList(limit: Int = 50) async throws -> Any {
+        return try await fetchJSON(from: "\(api)/temp-mail/emails?limit=\(limit)")
+    }
+
+    public func getMessage(emailId: String) async throws -> Any {
+        return try await fetchJSON(from: "\(api)/temp-mail/emails/\(emailId)")
     }
 }
