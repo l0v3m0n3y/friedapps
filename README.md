@@ -7,8 +7,8 @@ import friedapps
 let client = Friedapps()
 
 do {
-    let email_info = try await client.generate_email()
-    print(email_info)
+    let emailInfo = try await client.generateEmail()
+    print(emailInfo)
 } catch {
     print("Error: \(error)")
 }
